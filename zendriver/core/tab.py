@@ -919,7 +919,13 @@ class Tab(Connection):
 
         async def close_handler(event: cdp.target.TargetDestroyed) -> None:
             if self.target and event.target_id == self.target.target_id:
-                future.set_result(event)
+                try:
+                    future.set_result(event)
+                except asyncio.exceptions.InvalidStateError:
+                    # might happen if a timeout happenned
+                    logger.warning(
+                        f"InvalidStateError while closing tab {self.target.target_id}"
+                    )
 
         self.browser.connection.add_handler(event_type, close_handler)
 

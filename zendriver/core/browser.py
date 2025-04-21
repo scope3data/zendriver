@@ -261,7 +261,11 @@ class Browser:
         event_type = cdp.target.TargetInfoChanged
 
         async def get_handler(event: cdp.target.TargetInfoChanged) -> None:
-            future.set_result(event)
+            try:
+                future.set_result(event)
+            except asyncio.exceptions.InvalidStateError:
+                # might happen if a timeout happenned
+                logger.warning("InvalidStateError while getting target info")
 
         self.connection.add_handler(event_type, get_handler)
 
