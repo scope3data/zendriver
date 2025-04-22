@@ -40,6 +40,8 @@ PING_TIMEOUT: int = 900  # 15 minutes
 TargetType = Union[cdp.target.TargetInfo, cdp.target.TargetID]
 
 logger = logging.getLogger("uc.connection")
+logger.setLevel(logging.DEBUG)
+# logging.basicConfig()
 
 
 class ProtocolException(Exception):
@@ -470,6 +472,7 @@ class Connection(metaclass=CantTouchThis):
             self.mapper.update({tx.id: tx})
             if not _is_update:
                 await self._register_handlers()
+            # print("<<< SEND", tx.message)
             await self.websocket.send(tx.message)
             try:
                 return await tx
@@ -585,8 +588,10 @@ class Connection(metaclass=CantTouchThis):
 
         tx = Transaction(cdp_obj)
         tx.connection = self
-        tx.id = -2
+        # tx.id = -2
+        tx.id = next(self.__count__)
         self.mapper.update({tx.id: tx})
+        # print(f"<<< SEND ONESHOT {tx.message}")
         await self.websocket.send(tx.message)
         try:
             # in try except since if browser connection sends this it reises an exception
@@ -651,6 +656,7 @@ class Listener:
                 msg = await asyncio.wait_for(
                     self.connection.websocket.recv(), self.time_before_considered_idle
                 )
+                # print(f">> LISTENER {id(self)} RECV", msg)
             except asyncio.TimeoutError:
                 self.idle.set()
                 # breathe
