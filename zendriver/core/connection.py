@@ -466,8 +466,6 @@ class Connection(metaclass=CantTouchThis):
         try:
             tx = Transaction(cdp_obj)
             tx.connection = self
-            if not self.mapper:
-                self.__count__ = itertools.count(0)
             tx.id = next(self.__count__)
             self.mapper.update({tx.id: tx})
             if not _is_update:
@@ -479,6 +477,12 @@ class Connection(metaclass=CantTouchThis):
                 e.message = e.message or ""
                 e.message += f"\ncommand:{tx.method}\nparams:{tx.params}"
                 raise e
+            except asyncio.CancelledError:
+                # Clean up transaction from mapper to prevent memory leaks
+                if tx.id in self.mapper:
+                    self.mapper.pop(tx.id)
+                # Re-raise so caller can handle appropriately
+                raise
         except Exception:
             await self.aclose()
             raise
@@ -685,7 +689,15 @@ class Listener:
 
                     # complete the transaction, which is a Future object
                     # and thus will return to anyone awaiting it.
-                    tx(**message)
+                    try:
+                        tx(**message)
+                    except Exception as e:
+                        logger.debug(
+                            "exception during tx() %s\nmessage was: %s",
+                            e,
+                            message,
+                        )
+                        continue
                 else:
                     if message["id"] == -2:
                         maybe_tx = self.connection.mapper.get(-2)
@@ -698,8 +710,6 @@ class Listener:
                 try:
                     event = cdp.util.parse_json_event(message)
                     event_tx = EventTransaction(event)
-                    if not self.connection.mapper:
-                        self.connection.__count__ = itertools.count(0)
                     event_tx.id = next(self.connection.__count__)
                     self.connection.mapper[event_tx.id] = event_tx
                 except Exception as e:
