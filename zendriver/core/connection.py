@@ -588,8 +588,8 @@ class Connection(metaclass=CantTouchThis):
 
         tx = Transaction(cdp_obj)
         tx.connection = self
-        # tx.id = -2
-        tx.id = next(self.__count__)
+        tx.id = -2
+        # tx.id = next(self.__count__)
         self.mapper.update({tx.id: tx})
         # print(f"<<< SEND ONESHOT {tx.message}")
         await self.websocket.send(tx.message)
