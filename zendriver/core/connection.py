@@ -715,9 +715,9 @@ class Listener:
                 # probably an event
                 try:
                     event = cdp.util.parse_json_event(message)
-                    event_tx = EventTransaction(event)
-                    event_tx.id = next(self.connection.__count__)
-                    self.connection.mapper[event_tx.id] = event_tx
+                    # event_tx = EventTransaction(event)
+                    # event_tx.id = next(self.connection.__count__)
+                    # self.connection.mapper[event_tx.id] = event_tx
                 except Exception as e:
                     logger.info(
                         "%s: %s  during parsing of json from event : %s"
